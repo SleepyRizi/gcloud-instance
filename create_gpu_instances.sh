@@ -2,7 +2,7 @@
 
 # Total number of VMs to create across all regions
 TOTAL_VMS=200
-VM_NAME_PREFIX="eth-node"
+VM_NAME_PREFIX="eth-nodeMainnet"
 MACHINE_TYPE="n1-highcpu-16"
 GPU_TYPE="nvidia-tesla-t4"
 MIN_GPU_COUNT=2
