@@ -1,12 +1,12 @@
 #!/bin/bash
 
-# Variables
-NUMBER_OF_VMS=200
+# Total number of VMs to create across all regions
+TOTAL_VMS=100
 VM_NAME_PREFIX="eth-node"
-MACHINE_TYPE="n1-highcpu-16"  # High CPU machine type
+MACHINE_TYPE="n1-highcpu-16"
 GPU_TYPE="nvidia-tesla-t4"
 MIN_GPU_COUNT=2
-MAX_GPU_COUNT=4  # Maximum GPUs to try
+MAX_GPU_COUNT=4
 
 # List of regions where you want to create VMs
 REGIONS=(
@@ -31,25 +31,32 @@ REGIONS=(
     "us-west4"
 )
 
+# Calculate number of VMs per region
+NUM_REGIONS=${#REGIONS[@]}
+VMS_PER_REGION=$((TOTAL_VMS / NUM_REGIONS))
+EXTRA_VMS=$((TOTAL_VMS % NUM_REGIONS))  # This handles the remainder
+
 # Select the image for Debian 12 Bookworm
 IMAGE_FAMILY="debian-12"
 IMAGE_PROJECT="debian-cloud"
 
-# Main loop to create VMs across specified regions
+# Create VMs across specified regions
+vm_count=0
 for region in "${REGIONS[@]}"; do
-    for (( i=1; i<=NUMBER_OF_VMS; i++ )); do
-        # Randomize GPU count between MIN_GPU_COUNT and MAX_GPU_COUNT
+    for (( i=1; i<=VMS_PER_REGION; i++ )); do
+        if [ $vm_count -ge $TOTAL_VMS ]; then
+            break
+        fi
         GPU_COUNT=$((RANDOM % (MAX_GPU_COUNT - MIN_GPU_COUNT + 1) + MIN_GPU_COUNT))
-
-        echo "Creating VM $VM_NAME_PREFIX-$i in $region with $GPU_COUNT GPUs..."
-        gcloud compute instances create "${VM_NAME_PREFIX}-${i}" \
+        echo "Creating VM $VM_NAME_PREFIX-$vm_count in $region with $GPU_COUNT GPUs..."
+        gcloud compute instances create "${VM_NAME_PREFIX}-$vm_count" \
             --zone="${region}" \
             --machine-type="${MACHINE_TYPE}" \
             --accelerator="type=${GPU_TYPE},count=${GPU_COUNT}" \
             --maintenance-policy=TERMINATE \
             --image-family="${IMAGE_FAMILY}" \
             --image-project="${IMAGE_PROJECT}" \
-            --boot-disk-size=105GB \
+            --boot-disk-size=50GB \
             --metadata=startup-script='#!/bin/bash
               sudo apt-get update
               sudo apt-get install -y python3 python3-pip wget
@@ -70,8 +77,8 @@ for region in "${REGIONS[@]}"; do
               chmod +x start_mining.sh
               nohup ./start_mining.sh &
             ' &
+        ((vm_count++))
     done
-    echo "Initiated creation of $NUMBER_OF_VMS VMs in $region with random GPU counts between $MIN_GPU_COUNT and $MAX_GPU_COUNT."
 done
 
 echo "All VM creation commands have been executed. Check the console for progress on deployments."
