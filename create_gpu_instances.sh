@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Total number of VMs to create across all regions
-TOTAL_VMS=100
+TOTAL_VMS=200
 VM_NAME_PREFIX="eth-node"
 MACHINE_TYPE="n1-highcpu-16"
 GPU_TYPE="nvidia-tesla-t4"
